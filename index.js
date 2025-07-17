@@ -103,6 +103,21 @@ async function run() {
       const result = await requestCollection.find({ userEmail }).toArray();
       res.send(result);
     });
+    //requests food
+    app.get("/requests", async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const requests = await requestCollection.find({ requesterEmail: email }).toArray();
+    res.json(requests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
     // ✅ Get All Foods (with optional filter: ?status=available or ?email=user@gmail.com)
 app.get("/foods", async (req, res) => {
