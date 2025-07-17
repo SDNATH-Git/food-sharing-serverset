@@ -22,20 +22,21 @@ const client = new MongoClient(uri, {
   },
 });
 
-// ✅ JWT Middleware
+// JWT Middleware
 function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).send({ message: "Unauthorized access" });
+  if (!authHeader)
+    return res.status(401).send({ message: "Unauthorized access. Token missing." });
 
   const token = authHeader.split(" ")[1];
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).send({ message: "Forbidden" });
+    if (err)
+      return res.status(403).send({ message: "Forbidden. Invalid or expired token." });
     req.decoded = decoded;
     next();
   });
 }
 
-// 🔄 Main Function
 async function run() {
   try {
     await client.connect();
@@ -45,26 +46,32 @@ async function run() {
     const foodCollection = db.collection("foods");
     const requestCollection = db.collection("requests");
 
-    // ✅ Root Route
+    // Root Route
     app.get("/", (req, res) => {
       res.send("🍽️ Food Sharing API with JWT Running...");
     });
 
-    // ✅ JWT Token Generator
+    // JWT Token Generator
     app.post("/jwt", (req, res) => {
-      const user = req.body; // { email }
+      const user = req.body; // Expected: { email: userEmail }
+      if (!user.email) {
+        return res.status(400).send({ message: "Email is required to generate token." });
+      }
       const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "7d" });
       res.send({ token });
     });
 
-    // ✅ Add Food
-    app.post("/foods", async (req, res) => {
+    // Add Food
+    app.post("/foods", verifyJWT, async (req, res) => {
       const food = req.body;
+      if (!food.donorEmail) {
+        return res.status(400).send({ message: "Donor email is required." });
+      }
       const result = await foodCollection.insertOne(food);
       res.send(result);
     });
 
-    // ✅ Get All Foods (with optional query)
+    // Get All Foods (optional filtering)
     app.get("/foods", async (req, res) => {
       const { status, email } = req.query;
       let query = {};
@@ -76,16 +83,23 @@ async function run() {
       res.send(result);
     });
 
-    // ✅ Get Single Food by ID
+    // Get Single Food by ID
     app.get("/foods/:id", async (req, res) => {
       const id = req.params.id;
+      if (!ObjectId.isValid(id))
+        return res.status(400).send({ message: "Invalid food ID." });
+
       const result = await foodCollection.findOne({ _id: new ObjectId(id) });
+      if (!result) return res.status(404).send({ message: "Food not found." });
       res.send(result);
     });
 
-    // ✅ Update Food
-    app.patch("/foods/:id", async (req, res) => {
+    // Update Food
+    app.patch("/foods/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
+      if (!ObjectId.isValid(id))
+        return res.status(400).send({ message: "Invalid food ID." });
+
       const updated = req.body;
       const result = await foodCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -94,35 +108,42 @@ async function run() {
       res.send(result);
     });
 
-    // ✅ Delete Food
-    app.delete("/foods/:id", async (req, res) => {
+    // Delete Food
+    app.delete("/foods/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
+      if (!ObjectId.isValid(id))
+        return res.status(400).send({ message: "Invalid food ID." });
+
       const result = await foodCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    // ✅ Make a Food Request
-    app.post("/requests", async (req, res) => {
+    // Make a Food Request
+    app.post("/requests", verifyJWT, async (req, res) => {
       const request = req.body;
+      if (!request.userEmail) {
+        return res.status(400).send({ message: "User email is required." });
+      }
       const result = await requestCollection.insertOne(request);
       res.send(result);
     });
 
-    // ✅ Get My Requested Foods (Private)
+    // Get My Requested Foods (Private)
     app.get("/requests", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
 
       if (!email || email !== decodedEmail) {
-        return res.status(403).send({ message: "Forbidden" });
+        return res.status(403).send({ message: "Forbidden: Email mismatch." });
       }
 
       const requests = await requestCollection.find({ userEmail: email }).toArray();
       res.send(requests);
     });
 
-    // ✅ (Optional) Admin can get all requests
-    app.get("/all-requests", async (req, res) => {
+    // (Optional) Admin: Get all requests
+    app.get("/all-requests", verifyJWT, async (req, res) => {
+      // TODO: Add admin role verification here
       const all = await requestCollection.find().toArray();
       res.send(all);
     });
@@ -134,7 +155,6 @@ async function run() {
 
 run();
 
-// ✅ Server Listen
 app.listen(port, () => {
   console.log(`🚀 Server with JWT running at http://localhost:${port}`);
 });
