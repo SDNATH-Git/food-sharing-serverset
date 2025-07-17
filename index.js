@@ -64,14 +64,6 @@ async function run() {
       res.send(result);
     });
 
-    // ✅ Get All Foods (Optional ?status=available)
-    app.get("/foods", async (req, res) => {
-      const { status } = req.query;
-      const query = status ? { status } : {};
-      const result = await foodCollection.find(query).toArray();
-      res.send(result);
-    });
-
     // ✅ Get Single Food by ID
     app.get("/foods/:id", async (req, res) => {
       const id = req.params.id;
@@ -110,7 +102,7 @@ async function run() {
       const result = await requestCollection.find({ userEmail }).toArray();
       res.send(result);
     });
-    
+
     // ✅ Get All Foods (with optional filter: ?status=available or ?email=user@gmail.com)
 app.get("/foods", async (req, res) => {
   const { status, email } = req.query;
