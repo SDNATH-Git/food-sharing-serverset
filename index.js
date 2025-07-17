@@ -72,15 +72,27 @@ async function run() {
     });
 
     // ✅ Update Food Status (requested)
+    // app.patch("/foods/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const { status } = req.body;
+    //   const result = await foodCollection.updateOne(
+    //     { _id: new ObjectId(id) },
+    //     { $set: { status } }
+    //   );
+    //   res.send(result);
+    // });
+
     app.patch("/foods/:id", async (req, res) => {
-      const id = req.params.id;
-      const { status } = req.body;
-      const result = await foodCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { status } }
-      );
-      res.send(result);
-    });
+  const id = req.params.id;
+  const updated = req.body;
+
+  const result = await foodCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updated }
+  );
+  res.send(result);
+});
+
 
     // ✅ Delete Food (optional)
     app.delete("/foods/:id", async (req, res) => {
