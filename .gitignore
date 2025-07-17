@@ -1,3 +1,4 @@
 Node_modules
 .env
 admainkey.json
+.vercel
