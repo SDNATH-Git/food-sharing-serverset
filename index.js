@@ -39,7 +39,7 @@ function verifyJWT(req, res, next) {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("✅ Connected to MongoDB");
 
     const db = client.db("foodSharingDB");
