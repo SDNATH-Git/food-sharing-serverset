@@ -7,9 +7,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware----
-app.use(cors());
-app.use(express.json());
 
 // MongoDB URI-----
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.y7n1te0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -45,6 +42,7 @@ async function run() {
     const db = client.db("foodSharingDB");
     const foodCollection = db.collection("foods");
     const requestCollection = db.collection("requests");
+    const chatRoutes = require("./chatRoutes");
 
     // Root Route
     app.get("/", (req, res) => {
@@ -60,6 +58,9 @@ async function run() {
       const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "7d" });
       res.send({ token });
     });
+    
+    // AI chatRoutes
+    app.use("/api", chatRoutes());
 
     // Add Food
     app.post("/foods", verifyJWT, async (req, res) => {
@@ -158,3 +159,5 @@ run();
 app.listen(port, () => {
   console.log(`🚀 Server with JWT running at http://localhost:${port}`);
 });
+
+
